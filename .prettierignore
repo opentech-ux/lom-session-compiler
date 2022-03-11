@@ -1,0 +1,6 @@
+.vscode/
+build/
+dist/
+dist-dev/
+node_modules/
+web_test/
