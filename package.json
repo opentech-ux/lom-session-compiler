@@ -6,7 +6,8 @@
     "url": "https://github.com/opentech-ux/lom-compiler/issues"
   },
   "dependencies": {
-    "create-html-element": "^3.0.0"
+    "create-html-element": "^3.0.0",
+    "@opentech-ux/session-model": "^0.1.0"
   },
   "description": "Compiler to generate playable HTML wireframe site from layout description model (LOM)",
   "devDependencies": {
