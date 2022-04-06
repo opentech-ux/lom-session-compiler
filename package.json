@@ -1,15 +1,29 @@
 {
-  "authors": [
+  "name": "@opentech-ux/lom-session-compiler",
+  "version": "0.3.0",
+  "description": "Compiler to generate UX session replay site from captured session chunks",
+  "author": "Pierre-Louis JAEGER <pjr@devalgo.com>",
+  "maintainers": [
     "Pierre-Louis JAEGER <pjr@devalgo.com>"
   ],
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/opentech-ux/lom-session-compiler#readme",
+  "keywords": [
+    "LOM",
+    "wireframe",
+    "compiler"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opentech-ux/lom-session-compiler.git"
+  },
   "bugs": {
-    "url": "https://github.com/opentech-ux/lom-compiler/issues"
+    "url": "https://github.com/opentech-ux/lom-session-compiler/issues"
   },
   "dependencies": {
-    "create-html-element": "^3.0.0",
-    "@opentech-ux/session-model": "^0.1.0"
+    "@opentech-ux/session-model": "^0.1.0",
+    "create-html-element": "^3.0.0"
   },
-  "description": "Compiler to generate playable HTML wireframe site from layout description model (LOM)",
   "devDependencies": {
     "@types/chai": "^4.2.22",
     "@types/mocha": "^9.0.0",
@@ -33,6 +47,7 @@
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4"
   },
+  "types": "build/lib/LomCompiler.d.ts",
   "directories": {
     "test": "tests"
   },
@@ -40,25 +55,8 @@
     "build/lib/**/*",
     "build/json-schema/**/*"
   ],
-  "homepage": "https://github.com/opentech-ux/lom-compiler#readme",
-  "keywords": [
-    "LOM",
-    "wireframe",
-    "compiler"
-  ],
-  "license": "Apache-2.0",
-  "main": "build/lib/LomCompiler.js",
-  "maintainers": [
-    "Pierre-Louis JAEGER <pjr@devalgo.com>",
-    "Ruben CONDE <ruben.conde@ux-key.com>"
-  ],
-  "name": "@opentech-ux/lom-compiler",
   "publishConfig": {
     "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/opentech-ux/lom-compiler.git"
   },
   "scripts": {
     "build": "npm run build:clean && npm run model:generate && npm run build:ts",
@@ -74,8 +72,5 @@
     "test:eslint": "eslint --ext .js,.jsx,.ts,.tsx --ignore-path .gitignore . --color",
     "test:mocha": "rimraf ./build/test-output && mocha -r ts-node/register tests/**/*.test.ts",
     "test:prettier": "prettier \"./**/*.{js,jsx,ts,tsx}\" --ignore-path .gitignore -l"
-  },
-  "types": "build/lib/LomCompiler.d.ts",
-  "version": "0.3.0",
-  "author": ""
+  }
 }
