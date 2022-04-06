@@ -1,21 +1,39 @@
+import * as fs from 'fs';
 import { CompilationContext } from './CompilationContext';
+import { SessionCapture } from '../build/json-schema/sessionCapture.schema';
+import { SessionTimeline } from './SessionTimeline';
 
-/**
- * @description Main class to compile the LOM data.
- *
- * @export
- * @class SessionCompiler
- */
+/** Class implementing the session compilation process. */
 export class SessionCompiler {
     private readonly context: CompilationContext;
+
+    private sessionId?: string;
+
+    private readonly chunks: SessionCapture[] = [];
 
     constructor(context: CompilationContext) {
         this.context = context;
     }
 
+    private loadChunk(file: string) {
+        const chunk = JSON.parse(fs.readFileSync(file, 'utf8')) as SessionCapture;
+        if (!this.sessionId) this.sessionId = chunk.sid;
+        else if (this.sessionId !== chunk.sid)
+            throw new Error(`Inconsistent session IDs in ${file}, ${this.sessionId} expected, but was ${chunk.sid}`);
+        this.chunks.push(chunk);
+    }
+
     public compile(): void {
-        console.debug(this.context);
-        // this.context.sourceFiles.forEach((file) => {
+        // Step 1 : Load all session chunks in RAM
+        this.context.sourceFiles.forEach((file) => this.loadChunk(file));
+
+        // Step 2 : Sort chunks by timestamp
+        this.chunks.sort((a, b) => b.ts - a.ts);
+
+        // Step 3 : Build the timeline
+        const timeline = new SessionTimeline();
+        this.chunks.forEach((chunk) => timeline.addChunk(chunk));
+
         //     const lomModel = JSON.parse(fs.readFileSync(file, 'utf8')) as LomModel;
         //     const rootPath = lomModel.rootPath.rooted();
         //
