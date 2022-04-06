@@ -3,6 +3,7 @@ import path from 'path';
 import { CompilationContext } from './CompilationContext';
 import { SessionCompiler } from './SessionCompiler';
 
+/** Implementation of {@link CompilationContext}. */
 export class CompilationContextImpl implements CompilationContext {
     private _outputDir: string;
 
