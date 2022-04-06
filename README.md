@@ -4,7 +4,7 @@
 [![npm license](https://badgen.net/npm/license/@opentech-ux/lom-session-compiler)](https://www.npmjs.com/package/@opentech-ux/lom-session-compiler)
 [![Build Status](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Factions-badge.atrox.dev%2Fopentech-ux%2Flom-session-compiler%2Fbadge%3Fref%3Dmaster&style=flat)](https://actions-badge.atrox.dev/opentech-ux/lom-session-compiler/goto?ref=master)
 
--  [OpenTech UX LOM Compiler](#opentech-ux-session-compiler)
+-  [OpenTech UX Session Compiler](#opentech-ux-session-compiler)
    -  [Description](#description)
    -  [Installation](#installation)
    -  [Importing](#importing)
@@ -42,4 +42,4 @@ _tba_
 
 ## License
 
-[APACHE 2.0](LICENSE)
+[APACHE 2.0](LICENSE.md)
