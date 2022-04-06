@@ -20,8 +20,11 @@
   "bugs": {
     "url": "https://github.com/opentech-ux/lom-session-compiler/issues"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "@opentech-ux/session-model": "^0.1.2",
+    "@opentech-ux/session-model": "^0.2.0",
     "create-html-element": "^3.0.0",
     "stringify-attributes": "^3.0.0"
   },
@@ -56,9 +59,6 @@
     "build/lib/**/*",
     "build/json-schema/**/*"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "npm run build:clean && npm run model:generate && npm run build:ts",
     "build:clean": "rimraf ./build",
