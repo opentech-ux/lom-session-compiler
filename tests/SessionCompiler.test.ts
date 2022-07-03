@@ -40,35 +40,42 @@ describe('Session compiler tests', () => {
         fs.writeFileSync(`${baseDir}/timings.csv`, timingsCsv);
     });
 
-    it('Try compilation of session S1', () => {
+    it('Try compilation of session S1', async () => {
         const outputDir = `${baseDir}/compilation/s1`;
         const context = createCompilationContext('./');
         context.outputDir(outputDir);
         context.source('tests/resources/s1');
-        context.compileSession();
+        await context.compileSession();
+
+        // eslint-disable-next-line no-unused-expressions
+        expect(file(`${outputDir}/session.json`)).to.exist;
 
         // eslint-disable-next-line no-unused-expressions
         expect(file(`${outputDir}/session.zip`)).to.exist;
     });
 
-    it('Try compilation of session S2', () => {
+    it('Try compilation of session S2', async () => {
         const outputDir = `${baseDir}/compilation/s2`;
         const context = createCompilationContext('./');
         context.outputDir(outputDir);
         context.source('tests/resources/s2');
-        context.compileSession();
+        await context.compileSession();
 
+        // eslint-disable-next-line no-unused-expressions
+        expect(file(`${outputDir}/session.json`)).to.exist;
         // eslint-disable-next-line no-unused-expressions
         expect(file(`${outputDir}/session.zip`)).to.exist;
     });
 
-    it('Try compilation of session S3', () => {
+    it('Try compilation of session S3', async () => {
         const outputDir = `${baseDir}/compilation/s3`;
         const context = createCompilationContext('./');
         context.outputDir(outputDir);
         context.source('tests/resources/s3');
-        context.compileSession();
+        await context.compileSession();
 
+        // eslint-disable-next-line no-unused-expressions
+        expect(file(`${outputDir}/session.json`)).to.exist;
         // eslint-disable-next-line no-unused-expressions
         expect(file(`${outputDir}/session.zip`)).to.exist;
     });

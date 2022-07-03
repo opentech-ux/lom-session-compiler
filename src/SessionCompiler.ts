@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import JSZip from 'jszip';
 import { randomUUID } from 'crypto';
 import type * as M from '@opentech-ux/session-model';
@@ -32,26 +32,32 @@ export class SessionCompiler {
 
     private lomCounter = 1;
 
-    constructor(context: CompilationContext) {
-        let sessionId: string | undefined;
-        let userId: string | undefined;
-
-        context.sourceFiles.forEach((file) => {
-            const chunk = JSON.parse(fs.readFileSync(file, 'utf8')) as C.SessionCapture;
-            if (!sessionId) sessionId = chunk.sid;
-            else if (sessionId !== chunk.sid)
-                throw new Error(`Inconsistent session IDs in ${file}, ${sessionId} expected, but was ${chunk.sid}`);
-            if (!userId) userId = chunk.uid;
-            this.chunks.push(chunk);
-        });
-
-        if (!sessionId) throw new Error(`Empty session`);
-
-        this.chunks.sort((a, b) => a.ts - b.ts);
-
+    private constructor(context: CompilationContext, chunks: C.SessionCapture[], sessionId: string, userId?: string) {
         this.context = context;
+        this.chunks = chunks;
         this.session = { sessionId, timeStamp: this.chunks[0].ts, userId, loms: this.loms, timeline: this.timeline };
         this.currentChunk = 0;
+    }
+
+    public static async create(context: CompilationContext) {
+        let sessionId: string | undefined;
+        let userId: string | undefined;
+        const chunks: C.SessionCapture[] = [];
+
+        await Promise.all(
+            context.sourceFiles.map(async (file) => {
+                const chunk = JSON.parse(await fs.readFile(file, 'utf8')) as C.SessionCapture;
+                if (!sessionId) sessionId = chunk.sid;
+                else if (sessionId !== chunk.sid)
+                    throw new Error(`Inconsistent session IDs in ${file}, ${sessionId} expected, but was ${chunk.sid}`);
+                if (!userId) userId = chunk.uid;
+                chunks.push(chunk);
+            }),
+        );
+
+        if (!sessionId) throw new Error(`Empty session`);
+        chunks.sort((a, b) => a.ts - b.ts);
+        return new SessionCompiler(context, chunks, sessionId, userId);
     }
 
     private relativizeTimestampToSession(ts: number): number {
@@ -138,22 +144,21 @@ export class SessionCompiler {
         return undefined;
     }
 
-    public compile() {
+    public async compile() {
         function createLomTransition(id: string, ts: number): M.LomTransitionEvent {
             return { t: 'Transition', target: id, timeStamp: ts };
         }
 
         function createLom(lom: C.Lom): M.Lom {
-            function createZone(z: C.Zone, p?: M.Zone): M.Zone {
+            function createZone(z: C.Zone): M.Zone {
                 const result: M.Zone = {
-                    parent: p,
                     zoneId: z.id || randomUUID(),
                     transitions: [],
                     bounds: { x: z.b[0], y: z.b[1], width: z.b[2], height: z.b[3] },
                     style: z.s ? { background: z.s.bg, border: z.s.b } : undefined,
                     children: [],
                 };
-                z.c?.forEach((c) => result.children.push(createZone(c, result)));
+                z.c?.forEach((c) => result.children.push(createZone(c)));
                 return result;
             }
 
@@ -233,14 +238,16 @@ export class SessionCompiler {
 
         // Step 3 : Write resulting session object to output directory
         const sessionJSON = JSON.stringify(this.session);
-        fs.writeFileSync(`${this.context.outputDirectory}/session.json`, sessionJSON, 'utf8');
+        await fs.mkdir(this.context.outputDirectory, { recursive: true });
+        await fs.writeFile(`${this.context.outputDirectory}/session.json`, sessionJSON, 'utf8');
 
         // Step 4 : Build replay HTML site
         const generatedHtmlFiles: { [k: string]: string } = {};
         if (this.context.generateReplicaSite) {
             // TODO Build replica site
+            await fs.mkdir(`${this.context.outputDirectory}/replay`, { recursive: true });
             const indexFile = `${this.context.outputDirectory}/replay/index.html`;
-            fs.writeFileSync(indexFile, 'TEST', 'utf8');
+            await fs.writeFile(indexFile, 'TEST', 'utf8');
             generatedHtmlFiles['replay/index.html'] = indexFile;
         }
 
@@ -249,12 +256,10 @@ export class SessionCompiler {
             const zip = new JSZip();
             zip.file('session.json', sessionJSON);
             Object.entries(generatedHtmlFiles).forEach(([path, file]) => {
-                zip.file(path, fs.readFileSync(file, 'utf8'));
+                zip.file(path, fs.readFile(file, 'utf8'));
             });
-            zip.generateNodeStream({
-                type: 'nodebuffer',
-                streamFiles: true,
-            }).pipe(fs.createWriteStream(`${this.context.outputDirectory}/session.zip`));
+            const buffer = await zip.generateAsync({ type: 'nodebuffer', streamFiles: true });
+            await fs.writeFile(`${this.context.outputDirectory}/session.zip`, buffer);
         }
     }
 }

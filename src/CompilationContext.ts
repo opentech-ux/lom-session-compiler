@@ -43,5 +43,5 @@ export interface CompilationContext {
     outputDir(path: string): this; // eslint-disable-line no-unused-vars
 
     /** Compile the session chunks accordingly to the settings defined in this context. */
-    compileSession(): void;
+    compileSession(): Promise<void>;
 }
