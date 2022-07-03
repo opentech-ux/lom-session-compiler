@@ -1,14 +1,15 @@
 import * as chai from 'chai';
 import * as fs from 'fs';
 import * as C from '../build/json-schema/sessionCapture.schema';
+import { createCompilationContext } from '../build/lib/main';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chaiFiles = require('chai-files');
 
 chai.use(chaiFiles);
 
-// const { expect } = chai;
-// const { file } = chaiFiles;
+const { expect } = chai;
+const { file } = chaiFiles;
 
 const baseDir = 'build/test-output';
 
@@ -19,9 +20,9 @@ describe('Session compiler tests', () => {
         const t0 = 1648196401443;
 
         fs.readdirSync('tests/resources/s3')
-            .filter((file) => file.endsWith('.json'))
-            .forEach((file) => {
-                const chunk = JSON.parse(fs.readFileSync(`tests/resources/s3/${file}`, 'utf8')) as C.SessionCapture;
+            .filter((f) => f.endsWith('.json'))
+            .forEach((f) => {
+                const chunk = JSON.parse(fs.readFileSync(`tests/resources/s3/${f}`, 'utf8')) as C.SessionCapture;
                 const aets: number | undefined =
                     chunk.ae && chunk.ae.length ? Number(chunk.ae[0].split(':')[0]) : undefined;
                 const eets: number | undefined =
@@ -39,57 +40,36 @@ describe('Session compiler tests', () => {
         fs.writeFileSync(`${baseDir}/timings.csv`, timingsCsv);
     });
 
-    // it('Should fail on non existent baseDir', () => {
-    //     const invalidBaseDir = 'non/existent/path';
-    //
-    //     expect(() => new SessionCompiler(invalidBaseDir)).to.throw(`${invalidBaseDir} is not a valid directory.`);
-    // });
-    //
-    // it('Should fail on non directory baseDir', () => {
-    //     const invalidBaseDir = 'package.json';
-    //
-    //     expect(() => new SessionCompiler(invalidBaseDir)).to.throw(`${invalidBaseDir} is not a valid directory.`);
-    // });
-    //
-    // it('Should generate some HTML files (without baseDir)', () => {
-    //     const folderName = 'basic-lom';
-    //
-    //     new SessionCompiler()
-    //         .source('tests/resources/basic-lom/basic.lom.json')
-    //         .outputDir(`${baseDir}/${folderName}`)
-    //         .compile();
-    //
-    //     expect(file(`${baseDir}/${folderName}/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/otherPage/index.html`)).to.exist;
-    // });
-    //
-    // it('Should generate some HTML files (with baseDir)', () => {
-    //     const folderName = 'script-lom';
-    //
-    //     new SessionCompiler(baseDir)
-    //         .source('../../tests/resources/script-lom/script.lom.json')
-    //         .outputDir(folderName)
-    //         .compile();
-    //
-    //     expect(file(`${baseDir}/${folderName}/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/about/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/contact/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/index/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/location/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/price/index.html`)).to.exist;
-    // });
-    //
-    // it('Should generate some HTML files (with multiple json files)', () => {
-    //     const folderName = 'multi-lom';
-    //
-    //     new SessionCompiler(baseDir).source('../../tests/resources/multi-lom').outputDir(folderName).compile();
-    //
-    //     expect(file(`${baseDir}/${folderName}/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/about/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/contact/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/index/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/location/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/price/index.html`)).to.exist;
-    //     expect(file(`${baseDir}/${folderName}/otherPage/index.html`)).to.exist;
-    // });
+    it('Try compilation of session S1', () => {
+        const outputDir = `${baseDir}/compilation/s1`;
+        const context = createCompilationContext('./');
+        context.outputDir(outputDir);
+        context.source('tests/resources/s1');
+        context.compileSession();
+
+        // eslint-disable-next-line no-unused-expressions
+        expect(file(`${outputDir}/session.zip`)).to.exist;
+    });
+
+    it('Try compilation of session S2', () => {
+        const outputDir = `${baseDir}/compilation/s2`;
+        const context = createCompilationContext('./');
+        context.outputDir(outputDir);
+        context.source('tests/resources/s2');
+        context.compileSession();
+
+        // eslint-disable-next-line no-unused-expressions
+        expect(file(`${outputDir}/session.zip`)).to.exist;
+    });
+
+    it('Try compilation of session S3', () => {
+        const outputDir = `${baseDir}/compilation/s3`;
+        const context = createCompilationContext('./');
+        context.outputDir(outputDir);
+        context.source('tests/resources/s3');
+        context.compileSession();
+
+        // eslint-disable-next-line no-unused-expressions
+        expect(file(`${outputDir}/session.zip`)).to.exist;
+    });
 });
