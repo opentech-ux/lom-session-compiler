@@ -44,7 +44,7 @@ export class CompilationContextImpl implements CompilationContext {
                 ...fs
                     .readdirSync(realFilePath)
                     .filter((file) => file.endsWith('.json'))
-                    .map((json) => fs.realpathSync(path.resolve(realFilePath, json))),
+                    .map((json) => fs.realpathSync(path.resolve(realFilePath, json)))
             );
         } else {
             this._sourceFiles.push(realFilePath);

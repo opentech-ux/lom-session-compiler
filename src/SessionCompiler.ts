@@ -52,7 +52,7 @@ export class SessionCompiler {
                     throw new Error(`Inconsistent session IDs in ${file}, ${sessionId} expected, but was ${chunk.sid}`);
                 if (!userId) userId = chunk.uid;
                 chunks.push(chunk);
-            }),
+            })
         );
 
         if (!sessionId) throw new Error(`Empty session`);
