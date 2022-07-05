@@ -1,106 +1,106 @@
 name: Node.js CI
 
 on:
-   push:
-      branches: [master, develop, feature/**]
-   pull_request:
-      branches: [master]
-      types: [closed]
+  push:
+    branches: [ master, develop, feature/** ]
+  pull_request:
+    branches: [ master ]
+    types: [ closed ]
 
 jobs:
-   dependencies:
-      if: github.event.pull_request.merged == true || github.event_name == 'push'
-      runs-on: ubuntu-latest
-      strategy:
-         matrix:
-            node-version: [14]
-      steps:
-         - uses: actions/checkout@v2
+  dependencies:
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 16 ]
+    steps:
+      - uses: actions/checkout@v3
 
-         - name: Use Node.js ${{ matrix.node-version }}
-           uses: actions/setup-node@v2
-           with:
-              node-version: ${{ matrix.node-version }}
-              cache: 'npm'
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-         - name: Cache node_modules
-           id: node-cache
-           uses: actions/cache@v2
-           with:
-              path: node_modules
-              key: ${{ runner.os }}-npm-deps-${{ hashFiles('**/package-lock.json') }}
+      - name: Cache node_modules
+        id: node-cache
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-npm-deps-${{ hashFiles('**/package-lock.json') }}
 
-         - name: Install
-           if: steps.node-cache.outputs.cache-hit != 'true'
-           run: npm install
+      - name: Install
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm install
 
-   build:
-      if: github.event.pull_request.merged == true || github.event_name == 'push'
-      needs: dependencies
-      runs-on: ubuntu-latest
-      strategy:
-         matrix:
-            node-version: [14]
-      steps:
-         - uses: actions/checkout@v2
+  build:
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
+    needs: dependencies
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 16 ]
+    steps:
+      - uses: actions/checkout@v3
 
-         - name: Use Node.js ${{ matrix.node-version }}
-           uses: actions/setup-node@v2
-           with:
-              node-version: ${{ matrix.node-version }}
-              cache: 'npm'
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-         - name: Cache node_modules
-           uses: actions/cache@v2
-           with:
-              path: node_modules
-              key: ${{ runner.os }}-npm-deps-${{ hashFiles('**/package-lock.json') }}
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-npm-deps-${{ hashFiles('**/package-lock.json') }}
 
-         - name: Library build
-           run: npm run build
+      - name: Library build
+        run: npm run build
 
-         - name: Library upload
-           uses: actions/upload-artifact@v2
-           with:
-              name: build
-              path: build/
+      - name: Library upload
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: build/
 
-   tests:
-      if: github.event.pull_request.merged == true || github.event_name == 'push'
-      needs: [dependencies, build]
-      runs-on: ubuntu-latest
-      strategy:
-         matrix:
-            node-version: [14]
-      steps:
-         - uses: actions/checkout@v2
+  tests:
+    if: github.event.pull_request.merged == true || github.event_name == 'push'
+    needs: [ dependencies, build ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [ 16 ]
+    steps:
+      - uses: actions/checkout@v3
 
-         - name: Use Node.js ${{ matrix.node-version }}
-           uses: actions/setup-node@v2
-           with:
-              node-version: ${{ matrix.node-version }}
-              cache: 'npm'
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
-         - name: Cache node_modules
-           uses: actions/cache@v2
-           with:
-              path: node_modules
-              key: ${{ runner.os }}-npm-deps-${{ hashFiles('**/package-lock.json') }}
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-npm-deps-${{ hashFiles('**/package-lock.json') }}
 
-         - name: Library download
-           uses: actions/download-artifact@v2
-           with:
-              name: build
-              path: build
+      - name: Library download
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: build
 
-         - name: Prettier
-           run: npm run test:prettier
+      - name: Prettier
+        run: npm run test:prettier
 
-         - name: ESLint
-           run: npm run test:eslint
+      - name: ESLint
+        run: npm run test:eslint
 
-         - name: Mocha
-           run: npm run test:mocha
+      - name: Mocha
+        run: npm run test:mocha
 
-         - name: Coverage
-           run: npm run test:coverage
+      - name: Coverage
+        run: npm run test:coverage
