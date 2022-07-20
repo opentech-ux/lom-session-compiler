@@ -52,21 +52,22 @@
     "ts-node": "^10.7.0",
     "typescript": "^4.4.4"
   },
-  "types": "build/lib/LomCompiler.d.ts",
   "directories": {
     "test": "tests"
   },
   "files": [
-    "build/lib/**/*",
-    "build/json-schema/**/*"
+    "dist/lib/**/*",
+    "dist/json-schema/**/*"
   ],
+  "main": "dist/lib/main.js",
+  "types": "dist/lib/main.d.ts",
   "scripts": {
     "build": "npm run build:clean && npm run model:generate && npm run build:ts",
-    "build:clean": "rimraf ./build",
+    "build:clean": "rimraf ./build && rimraf ./dist",
     "build:ts": "tsc -p .",
     "deps:refresh": "rimraf ./node_modules ./package-lock.json && npm install",
     "eslint:format": "eslint --ext .js,.jsx,.ts,.tsx --ignore-path .gitignore . --fix",
-    "model:generate": "json2ts -i ./schemas/ -o ./build/json-schema/",
+    "model:generate": "json2ts -i ./schemas/ -o ./dist/json-schema/",
     "pkg:create": "npm run build && npm run test",
     "prettier:format": "prettier \"./**/*.{js,jsx,ts,tsx}\" --ignore-path .gitignore -l --write",
     "test": "npm run test:mocha && npm run test:prettier && npm run test:eslint",

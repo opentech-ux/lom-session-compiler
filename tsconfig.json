@@ -9,18 +9,18 @@
       "DOM"
     ],
     "module": "CommonJS",
-    "outDir": "./build/lib",
+    "outDir": "./dist/lib",
     "resolveJsonModule": true,
     "rootDirs": [
       "./src",
-      "./build/json-schema"
+      "./dist/json-schema"
     ],
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2015"
   },
   "exclude": [
-    "./build/lib",
+    "./dist/lib",
     "./node_modules",
     "./tests/**/*.test.ts"
   ],

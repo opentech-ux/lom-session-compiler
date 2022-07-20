@@ -4,6 +4,7 @@
 # Ignore NPM downloaded modules
 node_modules/
 build/
+dist/
 
 # Ignore IntelliJ IDEA files
 .idea

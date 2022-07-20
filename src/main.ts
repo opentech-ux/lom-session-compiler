@@ -1,6 +1,8 @@
 import { CompilationContext } from './CompilationContext';
 import { CompilationContextImpl } from './CompilationContextImpl';
 
+export { CompilationContext };
+
 /**
  * Creates a compilation context to prepare the compilation of session capture chunks.
  *

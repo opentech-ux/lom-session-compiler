@@ -3,7 +3,7 @@ import JSZip from 'jszip';
 import { randomUUID } from 'crypto';
 import type * as M from '@opentech-ux/session-model';
 import { CompilationContext } from './CompilationContext';
-import type * as C from '../build/json-schema/sessionCapture.schema';
+import type * as C from '../dist/json-schema/sessionCapture.schema';
 import { ActionEventBuilder, ExplorationEventBuilder, SessionBuilder, TimelineElementBuilder } from './model';
 
 const reverseShortEventTypes: { [key: string]: string } = {

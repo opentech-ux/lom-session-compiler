@@ -1,7 +1,7 @@
 import * as chai from 'chai';
 import * as fs from 'fs';
-import * as C from '../build/json-schema/sessionCapture.schema';
-import { createCompilationContext } from '../build/lib/main';
+import * as C from '../dist/json-schema/sessionCapture.schema';
+import { createCompilationContext } from '../dist/lib/main';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const chaiFiles = require('chai-files');
