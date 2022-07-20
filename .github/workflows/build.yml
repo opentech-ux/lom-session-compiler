@@ -62,8 +62,8 @@ jobs:
       - name: Library upload
         uses: actions/upload-artifact@v3
         with:
-          name: build
-          path: build/
+          name: dist
+          path: dist/
 
   tests:
     if: github.event.pull_request.merged == true || github.event_name == 'push'
@@ -90,8 +90,8 @@ jobs:
       - name: Library download
         uses: actions/download-artifact@v3
         with:
-          name: build
-          path: build
+          name: dist
+          path: dist
 
       - name: Prettier
         run: npm run test:prettier
