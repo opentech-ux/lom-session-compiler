@@ -42,6 +42,10 @@ export interface CompilationContext {
      */
     outputDir(path: string): this; // eslint-disable-line no-unused-vars
 
-    /** Compile the session chunks accordingly to the settings defined in this context. */
-    compileSession(): Promise<void>;
+    /** 
+     * Compile the session chunks accordingly to the settings defined in this context. 
+     * 
+     * @returns Returns a list of compiled session ids
+     */
+    compileSession(): Promise<string[]>;
 }

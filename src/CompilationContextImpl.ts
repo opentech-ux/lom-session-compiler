@@ -57,7 +57,7 @@ export class CompilationContextImpl implements CompilationContext {
         return this;
     }
 
-    async compileSession() {
-        await (await SessionCompiler.create(this)).compile();
+    async compileSession(): Promise<string[]> {
+        return await SessionCompiler.create(this);
     }
 }
