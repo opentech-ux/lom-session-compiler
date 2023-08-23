@@ -1,3 +1,3 @@
-export const LIMIT_SESSION_ACTIVE: number = 10;
+export const LIMIT_SESSION_ACTIVE = 10;
 
-export const LIMIT_SESSION_RECOVERY: number = 2;
+export const LIMIT_SESSION_RECOVERY = 2;
