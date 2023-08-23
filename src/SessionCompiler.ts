@@ -68,7 +68,7 @@ export class SessionCompiler {
         if (!sessionId) throw new Error(`Empty session`);
         chunks.sort((a, b) => a.ts - b.ts);
 
-        return await this.sessionFragmentation(context, chunks, sessionId, userId);
+        return this.sessionFragmentation(context, chunks, sessionId, userId);
     }
 
     /**
@@ -90,22 +90,25 @@ export class SessionCompiler {
         let activeSession: C.SessionCapture[] = [];
         let inactiveSession: C.SessionCapture[] = [];
         let sessionsId: string[] = [];
-        let isInactive: boolean = false;
-        let parentId = sessionId;
+        let isInactive = false;
+        const parentId = sessionId;
         let nextId = uuidv4();
         let currentId = uuidv4();
 
+        // eslint-disable-next-line no-restricted-syntax
         for (const [index, chunk] of chunks.entries()) {
             // Case 1: The first action (T0)
             if (index === 0) {
                 activeSession.push({ ...chunk });
 
+                // eslint-disable-next-line no-continue
                 continue;
             }
 
             // Case 2: Active session
             if (!isInactive) {
                 const acChunksTreated: Record<string, C.SessionCapture[] | string[] | boolean | string> =
+                    // eslint-disable-next-line no-await-in-loop
                     await this.getActiveChunks(
                         context,
                         chunks,
@@ -130,6 +133,7 @@ export class SessionCompiler {
             // Case 3: Inctive session
             if (isInactive) {
                 const chunksTreated: Record<string, C.SessionCapture[] | string[] | boolean | string> =
+                    // eslint-disable-next-line no-await-in-loop
                     await this.getInactiveChunks(
                         context,
                         chunk,
@@ -189,9 +193,8 @@ export class SessionCompiler {
         const previousChunk: C.SessionCapture = session[session.length - 1];
         const isLastChunk: boolean = index === chunks.length - 1;
 
-        const getIds = function () {
-            return sessionsId.length === 0 ? { pid: null, cip: parentId } : { pid: parentId, cip: currentId };
-        };
+        const getIds = () =>
+            sessionsId.length === 0 ? { pid: null, cip: parentId } : { pid: parentId, cip: currentId };
 
         // Check: The elapsed time between the previous and current chunk is within the accepted uptime.
         if (limitSession <= this.minElapsed(previousChunk.ts, chunk.ts) || isLastChunk) {
@@ -208,10 +211,13 @@ export class SessionCompiler {
             await new SessionCompiler(context, session, sessionEndedTs, cip, pid, null, userId).compile(cip);
 
             // Start the inactivity
+            // eslint-disable-next-line no-param-reassign
             isInactive = true;
+            // eslint-disable-next-line no-param-reassign
             session = [];
 
             // Reset the active session
+            // eslint-disable-next-line no-param-reassign
             currentId = uuidv4();
 
             // Save the generated session ID
@@ -261,13 +267,16 @@ export class SessionCompiler {
 
         // Check: The recovery of the session
         if (
+            // eslint-disable-next-line no-prototype-builtins
             chunk.hasOwnProperty('loms') &&
+            // eslint-disable-next-line no-prototype-builtins
             previousInactiveChunk?.hasOwnProperty('ee' || 'ae') &&
             limitSessionInactive >= this.minElapsed(previousInactiveChunk.ts, chunk.ts)
         ) {
             // Apply negative timestamp based on the time of the restart session
+            // eslint-disable-next-line no-restricted-syntax
             for (const item of session) {
-                item.ts = item.ts - chunk.ts;
+                item.ts -= chunk.ts;
             }
 
             // Remove the session that restarted the activity
@@ -285,15 +294,19 @@ export class SessionCompiler {
             ).compile(currentId);
 
             // Start the activity
+            // eslint-disable-next-line no-param-reassign
             isInactive = false;
             activeSession.push({ ...chunk });
+            // eslint-disable-next-line no-param-reassign
             session = [];
 
             // Save the generated session ID
             sessionsId.push(currentId);
 
             // Reset the inactive session
+            // eslint-disable-next-line no-param-reassign
             currentId = nextId;
+            // eslint-disable-next-line no-param-reassign
             nextId = uuidv4();
         }
 
