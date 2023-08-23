@@ -41,6 +41,7 @@ describe('Session compiler tests', () => {
     });
 
     it('Try compilation of session S1', async () => {
+        const sessionId = 'b43daf55-05c1-408b-96d8-6c58dd96d733';
         const outputDir = `${baseDir}/compilation/s1`;
         const context = createCompilationContext('./');
         context.outputDir(outputDir);
@@ -48,13 +49,14 @@ describe('Session compiler tests', () => {
         await context.compileSession();
 
         // eslint-disable-next-line no-unused-expressions
-        expect(file(`${outputDir}/session.json`)).to.exist;
+        expect(file(`${outputDir}/${sessionId}/session.json`)).to.exist;
 
         // eslint-disable-next-line no-unused-expressions
-        expect(file(`${outputDir}/session.zip`)).to.exist;
+        expect(file(`${outputDir}/${sessionId}/session.zip`)).to.exist;
     });
 
     it('Try compilation of session S2', async () => {
+        const sessionId = '002581ae-60cc-4945-b5b3-2ee74393b6e9';
         const outputDir = `${baseDir}/compilation/s2`;
         const context = createCompilationContext('./');
         context.outputDir(outputDir);
@@ -62,12 +64,13 @@ describe('Session compiler tests', () => {
         await context.compileSession();
 
         // eslint-disable-next-line no-unused-expressions
-        expect(file(`${outputDir}/session.json`)).to.exist;
+        expect(file(`${outputDir}/${sessionId}/session.json`)).to.exist;
         // eslint-disable-next-line no-unused-expressions
-        expect(file(`${outputDir}/session.zip`)).to.exist;
+        expect(file(`${outputDir}/${sessionId}/session.zip`)).to.exist;
     });
 
     it('Try compilation of session S3', async () => {
+        const sessionId = '003bfa93-f58b-4617-9e8c-45abf69109c0';
         const outputDir = `${baseDir}/compilation/s3`;
         const context = createCompilationContext('./');
         context.outputDir(outputDir);
@@ -75,8 +78,8 @@ describe('Session compiler tests', () => {
         await context.compileSession();
 
         // eslint-disable-next-line no-unused-expressions
-        expect(file(`${outputDir}/session.json`)).to.exist;
+        expect(file(`${outputDir}/${sessionId}/session.json`)).to.exist;
         // eslint-disable-next-line no-unused-expressions
-        expect(file(`${outputDir}/session.zip`)).to.exist;
+        expect(file(`${outputDir}/${sessionId}/session.zip`)).to.exist;
     });
 });
