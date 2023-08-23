@@ -60,10 +60,20 @@ export class SessionCompiler {
         if (!sessionId) throw new Error(`Empty session`);
         chunks.sort((a, b) => a.ts - b.ts);
 
-        return await this.sliceChunks(context, chunks, sessionId, userId);
+        return await this.sessionFragmentation(context, chunks, sessionId, userId);
     }
 
-    private static async sliceChunks(context: CompilationContext, chunks: C.SessionCapture[], sessionId: string, userId?: string): Promise<string[]> {
+    /**
+     * Fragmentation of sessions based on their period of inactivity
+     * 
+     * @param context Compilation context
+     * @param chunks Chunks of the session obtained by to the context
+     * @param sessionId The session identifier
+     * @param userId The user identifier
+     * 
+     * @returns List of generated identifiers corresponding to each fragmented session
+     */
+    private static async sessionFragmentation(context: CompilationContext, chunks: C.SessionCapture[], sessionId: string, userId?: string): Promise<string[]> {
         let activeSession: C.SessionCapture[] = [];
         let inactiveSession: C.SessionCapture[] = [];
         let sessionsId: string[] = [];
@@ -110,6 +120,23 @@ export class SessionCompiler {
         return sessionsId;
     }
 
+    /**
+     * Get the active chunks of a session
+     * 
+     * @param context Compilation context
+     * @param chunks Chunks of the session obtained by to the context
+     * @param chunk The current active chunk
+     * @param session List of active chunks of the session
+     * @param limitSession Estimated inactivity time limit 
+     * @param index Current iteration index
+     * @param sessionsId List of generated identifiers corresponding to each fragmented session
+     * @param parentId The source session identifier
+     * @param currentId The current session identifier
+     * @param isInactive Session activity flag 
+     * @param userId The user identifier
+     *
+     * @returns Updated session informatio
+     */
     static async getActiveChunks(
         context: CompilationContext,
         chunks: C.SessionCapture[],
@@ -163,6 +190,22 @@ export class SessionCompiler {
         }
     }
 
+    /**
+     * Get the inactive chunks of a session
+     * 
+     * @param context Compilation context
+     * @param chunk The current inactive chunk
+     * @param session List of inactive chunks of the session
+     * @param limitSessionInactive Estimated time limit to restart the activity 
+     * @param sessionsId List of generated identifiers corresponding to each fragmented session
+     * @param parentId The source session identifier
+     * @param currentId The source session identifier
+     * @param nextId The new session identifier to be started 
+     * @param isInactive Session activity flag 
+     * @param userId The user identifier
+     *
+     * @returns Updated session information
+     */
     static async getInactiveChunks(
         context: CompilationContext,
         chunk: C.SessionCapture,
