@@ -1,5 +1,12 @@
 /** Base class for captured events. */
-import { AbstractEvent, ActionEvent, ExplorationEvent, LomTransitionEvent, Session, LomId, Lom } from '@opentech-ux/session-model';
+import {
+    AbstractEvent,
+    ActionEvent,
+    ExplorationEvent,
+    LomTransitionEvent,
+    Session,
+    Lom,
+} from '@opentech-ux/session-model';
 
 /** Extension of AbstractEvent permitting LOM reference definition. */
 export interface AbstractEventBuilder extends AbstractEvent {
@@ -29,6 +36,6 @@ export interface SessionBuilder extends Session {
     readonly nextId: string | null;
     readonly timeStamp: number;
     readonly userId?: string;
-    readonly loms:  { [k: string]: Lom };
+    readonly loms: { [k: string]: Lom };
     readonly timeline: TimelineElementBuilder[];
 }
