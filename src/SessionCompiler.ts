@@ -1,9 +1,11 @@
 import * as fs from 'fs/promises';
 import JSZip from 'jszip';
 import { randomUUID } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 import type * as M from '@opentech-ux/session-model';
 import { CompilationContext } from './CompilationContext';
 import type * as C from '../dist/json-schema/sessionCapture.schema';
+import { LIMIT_SESSION_ACTIVE, LIMIT_SESSION_RECOVERY } from "./config/constants/session.constant";
 import { ActionEventBuilder, ExplorationEventBuilder, SessionBuilder, TimelineElementBuilder } from './model';
 
 const reverseShortEventTypes: { [key: string]: string } = {
@@ -32,14 +34,14 @@ export class SessionCompiler {
 
     private lomCounter = 1;
 
-    private constructor(context: CompilationContext, chunks: C.SessionCapture[], sessionId: string, userId?: string) {
+    private constructor(context: CompilationContext, chunks: C.SessionCapture[], timeStamp: number, sessionId: string, parentId: string | null, nextId: string | null, userId?: string) {
         this.context = context;
         this.chunks = chunks;
-        this.session = { sessionId, timeStamp: this.chunks[0].ts, userId, loms: this.loms, timeline: this.timeline };
+        this.session = { sessionId, parentId, nextId, timeStamp, userId, loms: this.loms, timeline: this.timeline };
         this.currentChunk = 0;
     }
 
-    public static async create(context: CompilationContext) {
+    public static async create(context: CompilationContext): Promise<string[]> {
         let sessionId: string | undefined;
         let userId: string | undefined;
         const chunks: C.SessionCapture[] = [];
@@ -57,7 +59,210 @@ export class SessionCompiler {
 
         if (!sessionId) throw new Error(`Empty session`);
         chunks.sort((a, b) => a.ts - b.ts);
-        return new SessionCompiler(context, chunks, sessionId, userId);
+
+        return await this.sessionFragmentation(context, chunks, sessionId, userId);
+    }
+
+    /**
+     * Fragmentation of sessions based on their period of inactivity
+     * 
+     * @param context Compilation context
+     * @param chunks Chunks of the session obtained by to the context
+     * @param sessionId The session identifier
+     * @param userId The user identifier
+     * 
+     * @returns List of generated identifiers corresponding to each fragmented session
+     */
+    private static async sessionFragmentation(context: CompilationContext, chunks: C.SessionCapture[], sessionId: string, userId?: string): Promise<string[]> {
+        let activeSession: C.SessionCapture[] = [];
+        let inactiveSession: C.SessionCapture[] = [];
+        let sessionsId: string[] = [];
+        let isInactive: boolean = false;
+        let parentId = sessionId;
+        let nextId = uuidv4();
+        let currentId = uuidv4();
+
+        for (const [index, chunk] of chunks.entries()) {
+            // Case 1: The first action (T0)
+            if (index === 0) {
+                activeSession.push({ ...chunk });
+
+                continue;
+            }
+
+            // Case 2: Active session
+            if (!isInactive) {
+                const acChunksTreated: Record<string, C.SessionCapture[] | string[] | boolean | string> = await this.getActiveChunks(
+                    context, chunks, chunk, activeSession, LIMIT_SESSION_ACTIVE, index, sessionsId, parentId, currentId, isInactive, userId);
+
+                // Set data updated
+                activeSession = acChunksTreated.session as C.SessionCapture[];
+                sessionsId = acChunksTreated.sessionsId as string[];
+                isInactive = acChunksTreated.isInactive as boolean;
+                currentId = acChunksTreated.currentId as string;
+            }
+
+            // Case 3: Inctive session
+            if (isInactive) {
+                const chunksTreated: Record<string, C.SessionCapture[] | string[] | boolean | string> = await this.getInactiveChunks(
+                    context, chunk, inactiveSession, LIMIT_SESSION_RECOVERY, sessionsId, parentId, currentId, nextId, isInactive, userId);
+
+                // Set data updated
+                inactiveSession = chunksTreated.inactiveSession as C.SessionCapture[];
+                activeSession = chunksTreated.activeSession as C.SessionCapture[];
+                sessionsId = chunksTreated.sessionsId as string[];
+                isInactive = chunksTreated.isInactive as boolean;
+                currentId = chunksTreated.currentId as string;
+                nextId = chunksTreated.nextId as string;
+            }
+        }
+
+        return sessionsId;
+    }
+
+    /**
+     * Get the active chunks of a session
+     * 
+     * @param context Compilation context
+     * @param chunks Chunks of the session obtained by to the context
+     * @param chunk The current active chunk
+     * @param session List of active chunks of the session
+     * @param limitSession Estimated inactivity time limit 
+     * @param index Current iteration index
+     * @param sessionsId List of generated identifiers corresponding to each fragmented session
+     * @param parentId The source session identifier
+     * @param currentId The current session identifier
+     * @param isInactive Session activity flag 
+     * @param userId The user identifier
+     *
+     * @returns Updated session informatio
+     */
+    static async getActiveChunks(
+        context: CompilationContext,
+        chunks: C.SessionCapture[],
+        chunk: C.SessionCapture,
+        session: C.SessionCapture[],
+        limitSession: number,
+        index: number,
+        sessionsId: string[],
+        parentId: string,
+        currentId: string,
+        isInactive: boolean,
+        userId?: string
+    ) {
+        const previousChunk: C.SessionCapture = session[session.length - 1];
+        const isLastChunk: boolean = index === (chunks.length - 1);
+
+        const getIds = function () {
+            return (sessionsId.length === 0) ? { pid: null, cip: parentId } : { pid: parentId, cip: currentId };
+        }
+
+        // Check: The elapsed time between the previous and current chunk is within the accepted uptime.
+        if ((limitSession <= this.minElapsed(previousChunk.ts, chunk.ts) || isLastChunk)) {
+            // If it is the last chunk, close the session with it
+            if (isLastChunk) session.push({ ...chunk });
+
+            // To the last saved chunk, add the time of inactivity
+            const sessionEndedTs = previousChunk.ts + limitSession * 60000;
+
+            // Get the currentId and parentId if applicable
+            const { pid, cip }: Record<string, string | null> = getIds();
+
+            // Close and send the session
+            await new SessionCompiler(context, session, sessionEndedTs, cip, pid, null, userId).compile(cip);
+
+            // Start the inactivity
+            isInactive = true;
+            session = [];
+
+            // Reset the active session
+            currentId = uuidv4();
+
+            // Save the generated session ID
+            sessionsId.push(cip);
+        } else session.push({ ...chunk });
+
+        return {
+            session,
+            sessionsId,
+            isInactive,
+            currentId
+        }
+    }
+
+    /**
+     * Get the inactive chunks of a session
+     * 
+     * @param context Compilation context
+     * @param chunk The current inactive chunk
+     * @param session List of inactive chunks of the session
+     * @param limitSessionInactive Estimated time limit to restart the activity 
+     * @param sessionsId List of generated identifiers corresponding to each fragmented session
+     * @param parentId The source session identifier
+     * @param currentId The source session identifier
+     * @param nextId The new session identifier to be started 
+     * @param isInactive Session activity flag 
+     * @param userId The user identifier
+     *
+     * @returns Updated session information
+     */
+    static async getInactiveChunks(
+        context: CompilationContext,
+        chunk: C.SessionCapture,
+        session: C.SessionCapture[],
+        limitSessionInactive: number,
+        sessionsId: string[],
+        parentId: string,
+        currentId: string,
+        nextId: string,
+        isInactive: boolean,
+        userId?: string
+    ) {
+        const previousInactiveChunk: C.SessionCapture = session[session.length - 1];
+        const activeSession: C.SessionCapture[] = [];
+
+        session.push({ ...chunk });
+
+        // Check: The recovery of the session
+        if (chunk.hasOwnProperty('loms') && previousInactiveChunk?.hasOwnProperty('ee' || 'ae')
+            && limitSessionInactive >= this.minElapsed(previousInactiveChunk.ts, chunk.ts)) {
+
+            // Apply negative timestamp based on the time of the restart session
+            for (const item of session) {
+                item.ts = item.ts - chunk.ts;
+            }
+
+            // Remove the session that restarted the activity
+            session.pop();
+
+            // Close and send the inactive session
+            await new SessionCompiler(context, session, previousInactiveChunk.ts, currentId, parentId, nextId, userId).compile(currentId);
+
+            // Start the activity
+            isInactive = false;
+            activeSession.push({ ...chunk });
+            session = [];
+
+            // Save the generated session ID
+            sessionsId.push(currentId);
+
+            // Reset the inactive session
+            currentId = nextId;
+            nextId = uuidv4();
+        }
+
+        return {
+            inactiveSession: session,
+            activeSession,
+            sessionsId,
+            isInactive,
+            currentId,
+            nextId
+        }
+    }
+
+    static minElapsed(previousTimestamp: number | undefined = 0, currentTimestamp: number | undefined = 0) {
+        return Math.floor(((currentTimestamp - previousTimestamp) / 1000) / 60);
     }
 
     private relativizeTimestampToSession(ts: number): number {
@@ -144,7 +349,7 @@ export class SessionCompiler {
         return undefined;
     }
 
-    public async compile() {
+    public async compile(sessionId: string) {
         function createLomTransition(id: string, ts: number): M.LomTransitionEvent {
             return { t: 'Transition', target: id, timeStamp: ts };
         }
@@ -238,15 +443,15 @@ export class SessionCompiler {
 
         // Step 3 : Write resulting session object to output directory
         const sessionJSON = JSON.stringify(this.session);
-        await fs.mkdir(this.context.outputDirectory, { recursive: true });
-        await fs.writeFile(`${this.context.outputDirectory}/session.json`, sessionJSON, 'utf8');
+        await fs.mkdir(`${this.context.outputDirectory}/${sessionId}`, { recursive: true });
+        await fs.writeFile(`${this.context.outputDirectory}/${sessionId}/session.json`, sessionJSON, 'utf8');
 
         // Step 4 : Build replay HTML site
         const generatedHtmlFiles: { [k: string]: string } = {};
         if (this.context.generateReplicaSite) {
             // TODO Build replica site
-            await fs.mkdir(`${this.context.outputDirectory}/replay`, { recursive: true });
-            const indexFile = `${this.context.outputDirectory}/replay/index.html`;
+            await fs.mkdir(`${this.context.outputDirectory}/${sessionId}/replay`, { recursive: true });
+            const indexFile = `${this.context.outputDirectory}/${sessionId}/replay/index.html`;
             await fs.writeFile(indexFile, 'TEST', 'utf8');
             generatedHtmlFiles['replay/index.html'] = indexFile;
         }
@@ -259,7 +464,7 @@ export class SessionCompiler {
                 zip.file(path, fs.readFile(file, 'utf8'));
             });
             const buffer = await zip.generateAsync({ type: 'nodebuffer', streamFiles: true });
-            await fs.writeFile(`${this.context.outputDirectory}/session.zip`, buffer);
+            await fs.writeFile(`${this.context.outputDirectory}/${sessionId}/session.zip`, buffer);
         }
     }
 }

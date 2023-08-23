@@ -1,5 +1,5 @@
 /** Base class for captured events. */
-import { AbstractEvent, ActionEvent, ExplorationEvent, LomTransitionEvent, Session } from '@opentech-ux/session-model';
+import { AbstractEvent, ActionEvent, ExplorationEvent, LomTransitionEvent, Session, LomId, Lom } from '@opentech-ux/session-model';
 
 /** Extension of AbstractEvent permitting LOM reference definition. */
 export interface AbstractEventBuilder extends AbstractEvent {
@@ -22,8 +22,13 @@ export interface ActionEventBuilder extends ActionEvent, AbstractEventBuilder {
 /** Alias for elements that can appear in the session timeline. */
 export type TimelineElementBuilder = ExplorationEventBuilder | ActionEventBuilder | LomTransitionEvent;
 
-/** An UX session with LOMs, exploration events and action events. */
+/** An UX session with IDs, LOMs, exploration events and action events. */
 export interface SessionBuilder extends Session {
-    /** List of events of this session in chronological order. */
+    readonly sessionId: string;
+    readonly parentId: string | null;
+    readonly nextId: string | null;
+    readonly timeStamp: number;
+    readonly userId?: string;
+    readonly loms:  { [k: string]: Lom };
     readonly timeline: TimelineElementBuilder[];
 }
