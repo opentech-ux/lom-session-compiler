@@ -1,6 +1,6 @@
 {
   "name": "@opentech-ux/lom-session-compiler",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Compiler to generate UX session replay site from captured session chunks",
   "author": "Pierre-Louis JAEGER <pjr@devalgo.com>",
   "maintainers": [
