@@ -26,6 +26,8 @@ export class SessionCompiler {
 
     private readonly session: SessionBuilder;
 
+    private chunksGeneral: C.SessionCapture[] = [];
+
     private currentChunk: number;
 
     private previousFaultyTs = 0;
@@ -37,6 +39,7 @@ export class SessionCompiler {
     private constructor(
         context: CompilationContext,
         chunks: C.SessionCapture[],
+        chunksGeneral: C.SessionCapture[],
         timeStamp: number,
         sessionId: string,
         parentId: string | null,
@@ -47,6 +50,7 @@ export class SessionCompiler {
         this.chunks = chunks;
         this.session = { sessionId, parentId, nextId, timeStamp, userId, loms: this.loms, timeline: this.timeline };
         this.currentChunk = 0;
+        this.chunksGeneral = chunksGeneral;
     }
 
     public static async create(context: CompilationContext): Promise<string[]> {
@@ -136,6 +140,7 @@ export class SessionCompiler {
                     // eslint-disable-next-line no-await-in-loop
                     await this.getInactiveChunks(
                         context,
+                        chunks,
                         chunk,
                         inactiveSession,
                         LIMIT_SESSION_RECOVERY,
@@ -208,7 +213,7 @@ export class SessionCompiler {
             const { pid, cip }: Record<string, string | null> = getIds();
 
             // Close and send the session
-            await new SessionCompiler(context, session, sessionEndedTs, cip, pid, null, userId).compile(cip);
+            await new SessionCompiler(context, session, chunks, sessionEndedTs, cip, pid, null, userId).compile(cip);
 
             // Start the inactivity
             // eslint-disable-next-line no-param-reassign
@@ -250,6 +255,7 @@ export class SessionCompiler {
      */
     static async getInactiveChunks(
         context: CompilationContext,
+        chunks: C.SessionCapture[],
         chunk: C.SessionCapture,
         session: C.SessionCapture[],
         limitSessionInactive: number,
@@ -286,6 +292,7 @@ export class SessionCompiler {
             await new SessionCompiler(
                 context,
                 session,
+                chunks,
                 previousInactiveChunk.ts,
                 currentId,
                 parentId,
@@ -395,7 +402,7 @@ export class SessionCompiler {
         function areCoincident(b1: M.Bounds, b2: M.Bounds, tolerance: number): boolean {
             return (
                 Math.abs(b1.x - b2.x) <= tolerance &&
-                Math.abs(b1.y - b2.x) <= tolerance &&
+                Math.abs(b1.y - b2.y) <= tolerance &&
                 Math.abs(b1.width - b2.width) <= tolerance &&
                 Math.abs(b1.height - b2.height) <= tolerance
             );
@@ -443,25 +450,41 @@ export class SessionCompiler {
             return doFindZone(lom.root);
         }
 
+        const lomsGeneral: C.Lom[] = [];
+        this.chunksGeneral.forEach((element) => {
+            element.loms?.forEach((lom) => {
+                lomsGeneral.push(lom as C.Lom);
+            });
+        });
+
+        const getLom = (lomOrRef: C.Lom, key: string) => {
+            const lomTs = this.relativizeTimestampToSession(lomOrRef.ts);
+            // eslint-disable-next-line array-callback-return, consistent-return
+            const lomFound = lomsGeneral.find((element) => {
+                if (element?.id === lomOrRef[key]) return element;
+            });
+
+            if (lomFound) {
+                const lom = createLom(lomFound);
+                const similarLomId = this.findSimilarLom(lom);
+
+                if (similarLomId) {
+                    this.addToTimeline(createLomTransition(similarLomId, lomTs));
+                } else {
+                    // eslint-disable-next-line no-plusplus
+                    const lomId = `l${String(this.lomCounter++).padStart(3, '0')}`;
+                    this.loms[lomId] = lom;
+                    this.addToTimeline(createLomTransition(lomId, lomTs));
+                }
+            }
+        };
+
         // Step 1 : Build the session timeline
         this.chunks.forEach((chunk, index) => {
             this.currentChunk = index;
-            chunk.loms?.forEach((lomOrRef) => {
-                const lomTs = this.relativizeTimestampToSession(lomOrRef.ts);
-                if ('r' in lomOrRef) {
-                    const lom = createLom(lomOrRef);
-                    const similarLomId = this.findSimilarLom(lom);
-                    if (similarLomId) {
-                        if (lomOrRef.id) this.lomDeduplicationMapping[lomOrRef.id] = similarLomId;
-                        this.addToTimeline(createLomTransition(similarLomId, lomTs));
-                    } else {
-                        // eslint-disable-next-line no-plusplus
-                        const lomId = `l${String(this.lomCounter++).padStart(3, '0')}`;
-                        if (lomOrRef.id) this.lomDeduplicationMapping[lomOrRef.id] = lomId;
-                        this.loms[lomId] = lom;
-                        this.addToTimeline(createLomTransition(lomId, lomTs));
-                    }
-                } else this.addToTimeline(createLomTransition(this.lomDeduplicationMapping[lomOrRef.ref], lomTs));
+            chunk.loms?.forEach((lomOrRef: C.Lom | C.LomRef) => {
+                if (lomOrRef.ref) getLom(lomOrRef as C.Lom, 'ref');
+                else getLom(lomOrRef as C.Lom, 'id');
             });
             chunk.ee?.forEach((ee) => this.addToTimeline(this.createExplorationEvent(ee)));
             chunk.ae?.forEach((ae) => this.addToTimeline(this.createActionEvent(ae)));
