@@ -330,8 +330,6 @@ export class SessionCompiler {
     }
 
     private relativizeTimestampToSession(ts: number, previousFaultyTs: number): number {
-        // console.log("ts", ts, "chunk.ts", this.chunks[this.currentChunk].ts,"session ts", - this.session.timeStamp,"ev -> ", Math.round(ts + this.chunks[this.currentChunk].ts - this.session.timeStamp));
-       //return Math.round(ts + this.chunks[this.currentChunk].ts - this.session.timeStamp);
         if (ts >= 0) return Math.round(ts + this.chunks[this.currentChunk].ts - this.session.timeStamp);
 
         // Fix negative timestamps caused by faulty event capture
