@@ -30,8 +30,6 @@ export class SessionCompiler {
 
     private currentChunk: number;
 
-    private previousFaultyTs = 0;
-
     private lomDeduplicationMapping: { [k: string]: string } = {};
 
     private lomCounter = 1;
@@ -331,15 +329,16 @@ export class SessionCompiler {
         return Math.floor((currentTimestamp - previousTimestamp) / 1000 / 60);
     }
 
-    private relativizeTimestampToSession(ts: number): number {
+    private relativizeTimestampToSession(ts: number, previousFaultyTs: number): number {
+        // console.log("ts", ts, "chunk.ts", this.chunks[this.currentChunk].ts,"session ts", - this.session.timeStamp,"ev -> ", Math.round(ts + this.chunks[this.currentChunk].ts - this.session.timeStamp));
+       //return Math.round(ts + this.chunks[this.currentChunk].ts - this.session.timeStamp);
         if (ts >= 0) return Math.round(ts + this.chunks[this.currentChunk].ts - this.session.timeStamp);
 
         // Fix negative timestamps caused by faulty event capture
         let docTs = ts + this.chunks[this.currentChunk].ts;
-        if (docTs < this.previousFaultyTs) {
-            docTs += this.previousFaultyTs;
+        if (docTs < previousFaultyTs) {
+            docTs += previousFaultyTs;
         }
-        this.previousFaultyTs = docTs;
         return Math.round(docTs);
     }
 
@@ -353,11 +352,11 @@ export class SessionCompiler {
         this.timeline.splice(index, 0, element);
     }
 
-    private createExplorationEvent(ee: C.ExplorationEvent): ExplorationEventBuilder {
+    private createExplorationEvent(ee: C.ExplorationEvent, previousFaultyTs: number): ExplorationEventBuilder {
         const [ts, t, scrollPos, mousePosOrZoneId = undefined, zoneId = undefined] = ee.split(':');
         const [sx, sy] = scrollPos.split(',');
         const scrollPosition = { x: Number(sx), y: Number(sy) };
-        const timeStamp = this.relativizeTimestampToSession(Number(ts));
+        const timeStamp = this.relativizeTimestampToSession(Number(ts), previousFaultyTs);
         const type = reverseShortEventTypes[t] || t;
         let mousePosition: M.Point | undefined;
         let focusedZoneId: string | undefined = zoneId;
@@ -370,9 +369,9 @@ export class SessionCompiler {
         return { t: 'Exploration', lom: '', type, timeStamp, scrollPosition, mousePosition, focusedZoneId };
     }
 
-    private createActionEvent(ae: C.ActionEvent): ActionEventBuilder {
+    private createActionEvent(ae: C.ActionEvent, previousFaultyTs: number): ActionEventBuilder {
         const [ts, t, zoneId, mousePos = undefined] = ae.split(':');
-        const timeStamp = this.relativizeTimestampToSession(Number(ts));
+        const timeStamp = this.relativizeTimestampToSession(Number(ts), previousFaultyTs);
         const type = reverseShortEventTypes[t] || t;
         let mousePosition: M.Point | undefined;
         if (mousePos) {
@@ -458,7 +457,7 @@ export class SessionCompiler {
         });
 
         const getLom = (lomOrRef: C.Lom, key: string) => {
-            const lomTs = this.relativizeTimestampToSession(lomOrRef.ts);
+            const lomTs = this.relativizeTimestampToSession(lomOrRef.ts, 0);
             // eslint-disable-next-line array-callback-return, consistent-return
             const lomFound = lomsGeneral.find((element) => {
                 if (element?.id === lomOrRef[key]) return element;
@@ -478,6 +477,7 @@ export class SessionCompiler {
                 }
             }
         };
+        
 
         // Step 1 : Build the session timeline
         this.chunks.forEach((chunk, index) => {
@@ -486,8 +486,19 @@ export class SessionCompiler {
                 if (lomOrRef.ref) getLom(lomOrRef as C.Lom, 'ref');
                 else getLom(lomOrRef as C.Lom, 'id');
             });
-            chunk.ee?.forEach((ee) => this.addToTimeline(this.createExplorationEvent(ee)));
-            chunk.ae?.forEach((ae) => this.addToTimeline(this.createActionEvent(ae)));
+            let previousFaultyTs = 0;
+            chunk.ee?.forEach((ee) => {
+                const processEvent = this.createExplorationEvent(ee, previousFaultyTs);
+                previousFaultyTs = processEvent.timeStamp;
+                this.addToTimeline(processEvent);
+            });
+            
+            previousFaultyTs = 0;
+            chunk.ae?.forEach((ae) => {
+                const processEvent = this.createActionEvent(ae, previousFaultyTs);
+                previousFaultyTs = processEvent.timeStamp;
+                this.addToTimeline(processEvent);
+            });
         });
 
         // Step 2 : Detect LOM transitions
