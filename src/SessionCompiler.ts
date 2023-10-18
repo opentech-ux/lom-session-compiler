@@ -106,7 +106,7 @@ export class SessionCompiler {
                 activeSession.push({ ...chunk });
 
                 // Close and send the session
-                await new SessionCompiler(
+                new SessionCompiler(
                     context,
                     activeSession,
                     chunks,
