@@ -106,7 +106,16 @@ export class SessionCompiler {
                 activeSession.push({ ...chunk });
 
                 // Close and send the session
-                await new SessionCompiler(context, activeSession, chunks, chunk.ts, chunk.sid, null, null, userId).compile(chunk.sid);
+                await new SessionCompiler(
+                    context,
+                    activeSession,
+                    chunks,
+                    chunk.ts,
+                    chunk.sid,
+                    null,
+                    null,
+                    userId
+                ).compile(chunk.sid);
 
                 sessionsId.push(chunk.sid);
             }
