@@ -101,7 +101,17 @@ export class SessionCompiler {
 
         // eslint-disable-next-line no-restricted-syntax
         for (const [index, chunk] of chunks.entries()) {
-            // Case 1: The first action (T0)
+            // Case 1: The session has only one chunk
+            if (chunks.length === 1) {
+                activeSession.push({ ...chunk });
+
+                // Close and send the session
+                await new SessionCompiler(context, activeSession, chunks, chunk.ts, chunk.sid, null, null, userId).compile(chunk.sid);
+
+                sessionsId.push(chunk.sid);
+            }
+
+            // Case 2: The first action (T0)
             if (index === 0) {
                 activeSession.push({ ...chunk });
 
@@ -109,7 +119,7 @@ export class SessionCompiler {
                 continue;
             }
 
-            // Case 2: Active session
+            // Case 3: Active session
             if (!isInactive) {
                 const acChunksTreated: Record<string, C.SessionCapture[] | string[] | boolean | string> =
                     // eslint-disable-next-line no-await-in-loop
@@ -134,7 +144,7 @@ export class SessionCompiler {
                 currentId = acChunksTreated.currentId as string;
             }
 
-            // Case 3: Inctive session
+            // Case 4: Inctive session
             if (isInactive) {
                 const chunksTreated: Record<string, C.SessionCapture[] | string[] | boolean | string> =
                     // eslint-disable-next-line no-await-in-loop
