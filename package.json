@@ -24,7 +24,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@opentech-ux/session-model": "^0.3.0",
+    "@opentech-ux/session-model": "^0.4.1",
     "create-html-element": "^3.0.0",
     "jszip": "^3.9.1",
     "stringify-attributes": "^3.0.0",

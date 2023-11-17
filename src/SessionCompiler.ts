@@ -24,6 +24,10 @@ export class SessionCompiler {
 
     private readonly timeline: TimelineElementBuilder[] = [];
 
+    private readonly navigationTiming: M.NavigationTiming[] = [];
+
+    private readonly resourceTiming: M.ResourceTiming[] = [];
+
     private readonly session: SessionBuilder;
 
     private chunksGeneral: C.SessionCapture[] = [];
@@ -48,7 +52,16 @@ export class SessionCompiler {
     ) {
         this.context = context;
         this.chunks = chunks;
-        this.session = { sessionId, parentId, nextId, timeStamp, userId, loms: this.loms, timeline: this.timeline };
+        this.session = {
+            sessionId,
+            parentId,
+            nextId,
+            timeStamp,
+            userId,
+            loms: this.loms,
+            timeline: this.timeline,
+            performanceTiming: { navigation: this.navigationTiming, resource: this.resourceTiming },
+        };
         this.currentChunk = 0;
         this.chunksGeneral = chunksGeneral;
     }
@@ -365,6 +378,31 @@ export class SessionCompiler {
         this.timeline.splice(index, 0, element);
     }
 
+    private addNavigationTiming(performanceTiming: C.NavigationTiming) {
+        this.navigationTiming.push({
+            originTs: Number(performanceTiming.ots),
+            interactiveTs: Number(performanceTiming.its),
+            completeTs: Number(performanceTiming.cts),
+            eventTs: Number(performanceTiming.ets),
+            interactiveLoadingTime: Number(performanceTiming.ilt),
+            completeLoadingTime: Number(performanceTiming.clt),
+            fromLomId: (performanceTiming.from as string) || null,
+            toLomId: String(performanceTiming.to),
+            timeStamp: Number(performanceTiming.ts),
+        });
+    }
+
+    private addResourceTiming(performanceResourceTiming: C.ResourceTiming) {
+        this.resourceTiming.push({
+            name: String(performanceResourceTiming.n),
+            startTime: Number(performanceResourceTiming.st),
+            responseEnd: Number(performanceResourceTiming.re),
+            entryType: String(performanceResourceTiming.et),
+            duration: Number(performanceResourceTiming.d),
+            timeStamp: Number(performanceResourceTiming.ts),
+        });
+    }
+
     private createExplorationEvent(ee: C.ExplorationEvent): ExplorationEventBuilder {
         const [ts, t, scrollPos, mousePosOrZoneId = undefined, zoneId = undefined] = ee.split(':');
         const [sx, sy] = scrollPos.split(',');
@@ -500,6 +538,8 @@ export class SessionCompiler {
             });
             chunk.ee?.forEach((ee) => this.addToTimeline(this.createExplorationEvent(ee)));
             chunk.ae?.forEach((ae) => this.addToTimeline(this.createActionEvent(ae)));
+            chunk.pnt?.forEach((pnt) => this.addNavigationTiming(pnt));
+            chunk.prt?.forEach((prt) => this.addResourceTiming(prt));
         });
 
         // Step 2 : Detect LOM transitions
