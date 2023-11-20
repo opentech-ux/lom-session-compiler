@@ -24,9 +24,9 @@ export class SessionCompiler {
 
     private readonly timeline: TimelineElementBuilder[] = [];
 
-    private readonly navigationTiming: M.NavigationTiming[] = [];
+    private readonly navigationTimings: M.NavigationTiming[] = [];
 
-    private readonly resourceTiming: M.ResourceTiming[] = [];
+    private readonly resourceTimings: M.ResourceTiming[] = [];
 
     private readonly session: SessionBuilder;
 
@@ -60,7 +60,7 @@ export class SessionCompiler {
             userId,
             loms: this.loms,
             timeline: this.timeline,
-            performanceTiming: { navigation: this.navigationTiming, resource: this.resourceTiming },
+            performanceTiming: { navigations: this.navigationTimings, resources: this.resourceTimings },
         };
         this.currentChunk = 0;
         this.chunksGeneral = chunksGeneral;
@@ -379,7 +379,7 @@ export class SessionCompiler {
     }
 
     private addNavigationTiming(performanceTiming: C.NavigationTiming) {
-        this.navigationTiming.push({
+        this.navigationTimings.push({
             originTs: Number(performanceTiming.ots),
             interactiveTs: Number(performanceTiming.its),
             completeTs: Number(performanceTiming.cts),
@@ -393,7 +393,7 @@ export class SessionCompiler {
     }
 
     private addResourceTiming(performanceResourceTiming: C.ResourceTiming) {
-        this.resourceTiming.push({
+        this.resourceTimings.push({
             name: String(performanceResourceTiming.n),
             startTime: Number(performanceResourceTiming.st),
             responseEnd: Number(performanceResourceTiming.re),

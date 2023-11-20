@@ -32,9 +32,9 @@ export interface ActionEventBuilder extends ActionEvent, AbstractEventBuilder {
 /** Extension of PerformanceTiming permitting to measure the loading time of the pages. */
 export interface PerformanceTimingBuilder extends PerformanceTiming {
     /** List of page load navigation time measures */
-    readonly navigation: NavigationTiming[];
+    readonly navigations: NavigationTiming[];
     /** List of page resource load time measures. */
-    readonly resource: ResourceTiming[];
+    readonly resources: ResourceTiming[];
 }
 
 /** Alias for elements that can appear in the session timeline. */
