@@ -522,7 +522,7 @@ export class SessionCompiler {
                     this.addToTimeline(createLomTransition(similarLomId, lomTs));
                 } else {
                     // eslint-disable-next-line no-plusplus
-                    const lomId = `l${String(this.lomCounter++).padStart(3, '0')}`;
+                    const lomId = String(lomOrRef.id);
                     this.loms[lomId] = lom;
                     this.addToTimeline(createLomTransition(lomId, lomTs));
                 }
